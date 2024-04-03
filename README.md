@@ -3,6 +3,7 @@ A BaiduYun safety share web.
 
 ## Usage  
 Add bduss in conf.php.
+Add accelerate link to get download and preview function by browser.
 
 ## FaQ
 You need request accelerate link in [@TeleXPorter](https://t.me/tg_tx).  
