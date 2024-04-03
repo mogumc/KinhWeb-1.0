@@ -2,8 +2,8 @@
 A BaiduYun safety share web.
 
 ## Usage  
-*PHP* Version 7.4+
-Add bduss in conf.php.
+*PHP* Version 7.4+  
+Add bduss in conf.php.  
 Add accelerate link to get download and preview function by browser.
 
 ## FaQ
