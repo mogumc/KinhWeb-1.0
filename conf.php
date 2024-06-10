@@ -7,8 +7,8 @@ if(!defined("ONINDEX")){
 
 $bduss = "";//请在""内填入您百度账户的BDUSS
 $link = "";//若存在加速链接,请填写您的加速链接
-$title = "KinhWeb 1.0";//您可以修改此处以修改网站标题
-$foot = "";//您可以修改此处以修改网站页脚
+$title = "KinhWeb 1.1";//您可以修改此处以修改网站标题
+$foot = "测试版本 仅供参考";//您可以修改此处以修改网站页脚
 
 //请不要随意更改下方内容
 $check_curl = is_callable("curl_init");
@@ -150,17 +150,8 @@ function rc4( $key_str, $data_str ) {
 	}
 	return base64_encode($data_str);
  }
-$sat = 0;
-if($link != "" && $link != null){
-    $data = get($link,array(""));
-    $j = json_decode($data);
-    $code = $j->code;
-    if($j->code == "0"){
-        $sat = 1;
-    }
-}
+
 define("BDUSS",$bduss);
 define("ACLINK",$link);
 define("TITLE",$title);
 define("FOOT",$foot);
-define("ACST",$sta);

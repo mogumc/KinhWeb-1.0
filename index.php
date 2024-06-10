@@ -6,7 +6,7 @@ $fid = $_GET['f'];
 if(!empty($fid)){
     header("Content-Type: text/json;charset=utf-8");
     $ua = $_SERVER['HTTP_USER_AGENT'];
-    if(ACST!=1){
+    if(ACLINK==""){
         $url = 'https://pan.baidu.com/api/gettemplatevariable?clienttype=web&app_id=250528&web=1&fields=[%22sign1%22,%22sign2%22,%22sign3%22,%22timestamp%22]';
         $data = get($url,array("User-Agent: netdisk","Cookie: BDUSS=".BDUSS));
         $j = json_decode($data);
@@ -33,14 +33,21 @@ if(!empty($fid)){
         }
         $dlink = $j->urls[0]->url;
     } else {
-        $url = LINK;
-        $pdata = "bduss=".BDUSS."&fid=".$f."&ua=".base64_encode($ua);
-        $data = post($url,$pdata,array("User-Agent: KinhWeb/1.0"));
-        $j = json_decode($data);
-        if (!$j or !$j->dlink) {
-    	    die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-        }
-        $dlink = $j->dlink;
+        $url = ACLINK;
+        if($url != "" && $url != null){
+            $data = get($url,array(""));
+            $j = json_decode($data);
+            $code = $j->code;
+            if($j->code == "0"){
+                $pdata = "bduss=".BDUSS."&fid=".$fid."&ua=".base64_encode($ua);
+                $data = post($url,$pdata,array("User-Agent: KinhWeb/1.0"));
+                $j = json_decode($data);
+                if (!$j or !$j->dlink) {
+                    die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
+                }
+                $dlink = $j->dlink;
+            }
+        }    
     }
     if(!$dlink){
         die(json_encode(array("errno" => '-8', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
