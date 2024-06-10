@@ -246,9 +246,6 @@ if($nulldir==1){ ?>
         <br>
         <div class="weui-form__text-area">
             <h2 class="weui-form__title"><?php print(TITLE); ?></h2>
-            <div class="weui-form__desc">上传文件  
-                <a href="javascript:window.open('https://'+ window.location.host +'/upload');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea">点我</a>
-            </div>
     </div>
         <div id="all">
             
