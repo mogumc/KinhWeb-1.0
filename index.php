@@ -34,7 +34,7 @@ if(!empty($fid)){
         $dlink = $j->urls[0]->url;
     } else {
         $url = LINK;
-        $pdata = "bduss=".BDUSS."&fid=".$f;
+        $pdata = "bduss=".BDUSS."&fid=".$f."&ua=".base64_encode($ua);
         $data = post($url,$pdata,array("User-Agent: KinhWeb/1.0"));
         $j = json_decode($data);
         if (!$j or !$j->dlink) {
