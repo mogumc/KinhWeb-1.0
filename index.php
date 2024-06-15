@@ -7,17 +7,24 @@ if(!empty($fid)){
     header("Content-Type: text/json;charset=utf-8");
     $ua = $_SERVER['HTTP_USER_AGENT'];
     if(ACLINK==""){
-        $url = 'https://pan.baidu.com/api/gettemplatevariable?clienttype=web&app_id=250528&web=1&fields=[%22sign1%22,%22sign2%22,%22sign3%22,%22timestamp%22]';
+        $url = 'http://pan.baidu.com/api/gettemplatevariable?clienttype=web&app_id=250528&web=1&fields=[%22sign1%22,%22sign2%22,%22sign3%22,%22timestamp%22,%22uk%22,%22is_vip%22,%22is_svip%22]';
         $data = get($url,array("User-Agent: netdisk","Cookie: BDUSS=".BDUSS));
         $j = json_decode($data);
         $sign1 = $j->result->sign1;
         $sign3 = $j->result->sign3;
+        $uk = $j->result->uk;
+        $vip = "0";
+        if($j->result->is_vip){
+            $vip = "1";
+        } elseif($j->result->is_svip){
+            $vip = "2";
+        }
         $sign = rc4($sign3,$sign1);
         if($sign == "" or $sign == null){
             die(json_encode(array("errno" => '-8', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
         }
         $timestamp = $j->result->timestamp;
-        $url = 'https://pan.baidu.com/api/download?clienttype=web&app_id=250528&web=1&fidlist=['.$fid.']&type=dlink&sign='.urlencode($sign).'&timestamp='.$timestamp;
+        $url = 'http://pan.baidu.com/api/download?clienttype=8&app_id=250528&web=1&fidlist=['.$fid.']&type=dlink&sign='.urlencode($sign).'&timestamp='.$timestamp;
         $data = get($url,array("User-Agent: ".$ua,"Cookie: BDUSS=".BDUSS));
         $j = json_decode($data);
         if (!$j or !$j->dlink[0]->dlink) {
@@ -25,8 +32,20 @@ if(!empty($fid)){
         }
         $dl2 = $j->dlink[0]->dlink;
         $d = parse_url($dl2);
-        $url = 'http://pan.baidu.com/rest/2.0/xpan/file?method=locatedownload&tls=1&app_id=250528&es=1&esl=1&ver=4.0&dtype=3&err_ver=1.0&ehps=0&open_pflag=0&clienttype=web&channel=0&version=7.35.1.2&wp_retry_num=2&tdt=1&gsl=0&gtchannel=0&gtrate=0&path='.str_ireplace("/file/","",$d["path"]).'&'.$d[query];
-        $data = get($url,array("User-Agent: ".$ua,"Cookie: BDUSS=".BDUSS));
+        $parm = geturl($d["query"]);
+        $url = "http://pan.baidu.com/api/report/user?action=sapi_auth&timestamp=".$time."&clienttype=8&app_id=250528&web=1";
+        $data = get($url,array("User-Agent: netdisk","Cookie: BDUSS=".$bduss));
+        $j = json_decode($data);
+        $sk = $j->uinfo;
+        $fid = GetSubStr($parm["fid"]."{}","-","{}");
+        $md5 = str_ireplace("/file/","",$d["path"]);
+        $url = 'http://pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload';
+        $pdata = 'tls=1&app_id=250528&es=1&esl=1&ver=4.0&dtype=3&err_ver=1.0&ehps=0&open_pflag=0&clienttype=8&channel=weixin&version=7.42.0.5&vip='.$vip.'&wp_retry_num=2&tdt=1&gsl=0&gtchannel=0&gtrate=0&gsl=0&gtchannel=0&gtrate=0&'.makerand($sk,$uk,$time).'&path='.$md5.'&'.$d["query"];
+        if($vip=="2"){
+            $pdata = 'tls=1&app_id=250528&es=1&esl=1&ver=4.0&dtype=3&err_ver=1.0&ehps=0&orgin=dlna&open_pflag=0&clienttype=8&channel=0&version=7.42.0.5&vip='.$vip.'&wp_retry_num=2&tdt=1&gsl=0&gtchannel=0&gtrate=0&gsl=0&gtchannel=0&gtrate=0&'.makerand($sk,$uk,$time).'&path='.$md5.'&'.$d["query"];
+        
+        }
+        $data = post($url,$pdata,array("User-Agent: ".$ua,"Cookie: BDUSS=".BDUSS));
         $j = json_decode($data);
         if (!$j or !$j->urls[0]->url) {
     	    die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
@@ -40,7 +59,7 @@ if(!empty($fid)){
             $code = $j->code;
             if($j->code == "0"){
                 $pdata = "bduss=".BDUSS."&fid=".$fid."&ua=".base64_encode($ua);
-                $data = post($url,$pdata,array("User-Agent: KinhWeb/1.0"));
+                $data = post($url,$pdata,array("User-Agent: KinhWeb/".VERSION));
                 $j = json_decode($data);
                 if (!$j or !$j->dlink) {
                     die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
@@ -96,7 +115,7 @@ if($errno != 0){
 <div class="weui-flex">
     <div class="weui-flex__item">
         <div class="placeholder">
-         <a href="javascript:javascript:openDir('%2F');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea" title="全部文件">全部文件</a>
+         <a href="javascript:openDir('%2F');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea" title="全部文件">全部文件</a>
          </div>
     </div>
 <?php
@@ -116,7 +135,7 @@ if($errno != 0){
             }
             echo '<div class="weui-flex__item">
         <div class="placeholder">
-         <a href="javascript:javascript:openDir(\''.urlencode($dir_path).'\');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea" title="'.$dirs[$i].'">'.$dirname.'</a>
+         <a href="javascript:openDir(\''.urlencode($dir_path).'\');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea" title="'.$dirs[$i].'">'.$dirname.'</a>
          </div>
          </div>
             ';
@@ -220,7 +239,7 @@ if($nulldir==1){ ?>
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="description" content="光与暗の交界处|Best File Web!"/>
+        <meta name="description" content=<?php print('"'.TITLE.'"'); ?>/>
         <meta name="renderer" content="webkit" />
         <meta name="referrer" content="never" />
         <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -228,6 +247,169 @@ if($nulldir==1){ ?>
         <link rel="stylesheet" href="//cdn.bootcdn.net/ajax/libs/weui/2.5.9/style/weui.min.css">
         <script src="//cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script src="//lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/dplayer/1.26.0/DPlayer.min.js"></script>
+        <script>
+                     function Aria2DownLoad(Name, DLink, UA, Split, port) {
+             	var Variable_WebSocket = new WebSocket('ws://localhost:' + port + '/jsonrpc');
+             	Variable_WebSocket.onopen = function() {
+             		Variable_WebSocket.send('{"jsonrpc":2,"id":"KinhWeb","method":"system.multicall","params":[[{"methodName":"aria2.addUri","params":[["' + DLink + '"],{"max-connection-per-server":"' + Split + '","split":"' + Split + '","out":"' + Name + '","user-agent":"' + UA + '","piece-length":"1M","allow-piece-length-change":"true"}]}]]}');
+             	}
+             	Variable_WebSocket.onclose = function() {
+             		msg('error', 'aria2c未启动');
+             	}
+            
+             	Variable_WebSocket.onerror = function() {
+             		msg('error', '发送失败');
+             	}
+            
+             	Variable_WebSocket.onmessage = function(e) {
+             		if (e.data.indexOf('result') != -1) {
+             			msg('error', '发送成功')
+             		}
+             	}
+             }
+            
+             function getNum(str, firstStr, secondStr) {
+             	if (str == "" || str == null || str == undefined) { // "",null,undefined
+             		return "";
+             	}
+             	if (str.indexOf(firstStr) < 0) {
+             		return "";
+             	}
+             	var subFirstStr = str.substring(str.indexOf(firstStr) + firstStr.length, str.length);
+             	var subSecondStr = subFirstStr.substring(0, subFirstStr.indexOf(secondStr));
+             	return subSecondStr;
+             }
+            
+             function msg(type, text) {
+             	if (type == 'error') {
+             		document.getElementById('error').innerHTML = text;
+             	} else {
+             		document.getElementById(type + 'info').innerHTML = text;
+             	}
+             	var ele = '#' + type;
+             	var elem = $(ele);
+             	if (elem.css('display') != 'none') return;
+             	elem.fadeIn(100);
+             	setTimeout(function() {
+             		elem.fadeOut(100);
+             	}, 2000);
+             }
+             
+             function openDir(path) {
+             	document.getElementById("loadinginfo").innerHTML = '获取文件列表中';
+             	$('#loading').fadeIn(100);
+             	var data = {
+             		'path': path
+             	}
+             	$.post(window.location.protocol + "//" + window.location.host + window.location.pathname, data, function(r) {
+             		document.getElementById("loading").style = 'display: none';
+             		document.getElementById('all').innerHTML = r;
+             	}).fail(function() {
+             		$('#loading').fadeOut(100);
+             		msg('warn', '获取失败');
+             	});
+             }
+            
+             function openMeue(num) {
+             	var ft = document.getElementById('File_Type_' + num).getAttribute('value');
+                 <?php if(ACLINK!="" or !empty(ACLINK)){ print('
+             	if (ft == \'视频\' || ft == \'图片\' || ft == \'音乐\') {
+             		if (ft == \'视频\') {
+             			document.getElementById("potplayer").style = \'display\';
+             		} else {
+             			document.getElementById("potplayer").style = \'display: none\';
+             		}
+             		document.getElementById("player").style = \'display\';
+             	} else if ($(\'#player\').css(\'display\') != \'none\') {
+             		document.getElementById("player").style = \'display: none\';
+             		document.getElementById("potplayer").style = \'display: none\';
+             	}');
+                }
+                ?>
+             	document.getElementById('meueid').setAttribute('value', num);
+             	$('#meue').fadeIn(100);
+             }
+            
+             function getDlink(type) {
+                document.getElementById("loadinginfo").innerHTML = '获取下载地址中';
+             	$('#loading').fadeIn(100);
+             	var num = document.getElementById('meueid').getAttribute('value');
+             	var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
+             	var fname = document.getElementById('File_Filename_' + num).getAttribute('value');
+             	var dlink = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=" + fid + '&s=.baidu.com';
+             	if (type == 'download') {
+             		window.open(dlink);
+             		msg('error', '获取下载地址成功');
+             	} else if (type == 'aria2c' || type == 'mo') {
+             		if (type == 'mo') {
+             			var port = 16800;
+             			Aria2DownLoad(fname, dlink, 'netdisk', 32, port);
+             		} else {
+             			var port = 6800;
+             			Aria2DownLoad(fname, dlink, 'netdisk', 16, port);
+             		}
+             	} else if (type == 'pot') {
+             		window.open('potplayer://' + dlink);
+             		msg('error', '获取下载地址成功');
+             	} else {
+             		var aux = document.createElement("input");
+             		aux.setAttribute("value", dlink);
+             		document.body.appendChild(aux);
+             		aux.select();
+             		document.execCommand("copy");
+             		document.body.removeChild(aux);
+             		msg('error', '已复制到粘贴板');
+             	}
+             	$('#loading').fadeOut(100);
+             }
+            
+             function player() {
+             	var num = document.getElementById('meueid').getAttribute('value');
+                var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
+                var ft = document.getElementById('File_Type_' + num).getAttribute('value');
+             	var url = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=" + fid;
+             	msg('error', '预览准备中...');
+             	if (ft == '图片') {
+             		document.getElementById('playerinfo').innerHTML = '<span id="galleryImg" alt="预览文件" role="img" class="weui-gallery__img" style="background-image: url(' + url + ');" tabindex="-1"></span>';
+     				$('#meue').fadeOut(100);
+     				$('#gallery').fadeIn(100)
+             	} else if (ft == '视频') {
+     				dplayer(url);
+     				$('#meue').fadeOut(100);
+     				$('#gallery').fadeIn(100)
+             	} else if (ft == '音乐') {
+     				dplayer(url);
+     				$('#meue').fadeOut(100);
+     				$('#gallery').fadeIn(100)
+             	} else {
+     				msg('error', '不支持的预览格式');
+             	}
+             }
+            
+             function dplayer(url) {
+             	var type = 'normal';
+             	const dp = new DPlayer({
+             		container: document.getElementById('playerinfo'),
+             		autoplay: true,
+             		video: {
+             			url: url,
+             			type: type,
+             			hotkey: true,
+             		}
+             	});
+             }
+            
+             function closeplayer() {
+             	$('#gallery').fadeOut(100);
+             	document.getElementById('playerinfo').innerText = 'null';
+             }
+            
+            $(function() {
+                $('#iosMask').on('click', function() {
+                $('#meue').fadeOut(100)
+                });
+            });
+        </script>
         <style type="text/css">
         .placeholder {
         margin: 5px;
@@ -248,12 +430,11 @@ if($nulldir==1){ ?>
             <h2 class="weui-form__title"><?php print(TITLE); ?></h2>
     </div>
         <div id="all">
-            
             <div class="page__bd page__bd_spacing">
                 <div class="weui-flex">
                     <div class="weui-flex__item">
                         <div class="placeholder">
-                            <a href="javascript:javascript:openDir('%2F');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea" title="全部文件">全部文件</a>
+                            <a href="javascript:openDir('%2F');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea" title="全部文件">全部文件</a>
                         </div>
                     </div>
                 </div>    
@@ -379,166 +560,6 @@ if($nulldir==1){ ?>
                 </div> 
             </div>
         </div> 
-        <script>
-             function Aria2DownLoad(Name, DLink, UA, Split, port) {
-             	var Variable_WebSocket = new WebSocket('ws://localhost:' + port + '/jsonrpc');
-             	Variable_WebSocket.onopen = function() {
-             		Variable_WebSocket.send('{"jsonrpc":2,"id":"KinhWeb","method":"system.multicall","params":[[{"methodName":"aria2.addUri","params":[["' + DLink + '"],{"max-connection-per-server":"' + Split + '","split":"' + Split + '","out":"' + Name + '","user-agent":"' + UA + '","piece-length":"1M","allow-piece-length-change":"true"}]}]]}');
-             	}
-             	Variable_WebSocket.onclose = function() {
-             		msg('error', 'aria2c未启动');
-             	}
-            
-             	Variable_WebSocket.onerror = function() {
-             		msg('error', '发送失败');
-             	}
-            
-             	Variable_WebSocket.onmessage = function(e) {
-             		if (e.data.indexOf('result') != -1) {
-             			msg('error', '发送成功')
-             		}
-             	}
-             }
-            
-             function getNum(str, firstStr, secondStr) {
-             	if (str == "" || str == null || str == undefined) { // "",null,undefined
-             		return "";
-             	}
-             	if (str.indexOf(firstStr) < 0) {
-             		return "";
-             	}
-             	var subFirstStr = str.substring(str.indexOf(firstStr) + firstStr.length, str.length);
-             	var subSecondStr = subFirstStr.substring(0, subFirstStr.indexOf(secondStr));
-             	return subSecondStr;
-             }
-            
-             function msg(type, text) {
-             	if (type == 'error') {
-             		document.getElementById('error').innerHTML = text;
-             	} else {
-             		document.getElementById(type + 'info').innerHTML = text;
-             	}
-             	var ele = '#' + type;
-             	var elem = $(ele);
-             	if (elem.css('display') != 'none') return;
-             	elem.fadeIn(100);
-             	setTimeout(function() {
-             		elem.fadeOut(100);
-             	}, 2000);
-             }
-             
-             function openDir(path) {
-             	document.getElementById("loadinginfo").innerHTML = '获取文件列表中';
-             	$('#loading').fadeIn(100);
-             	var data = {
-             		'path': path
-             	}
-             	$.post("https://" + window.location.host + "/", data, function(r) {
-             		document.getElementById("loading").style = 'display: none';
-             		document.getElementById('all').innerHTML = r;
-             	}).fail(function() {
-             		$('#loading').fadeOut(100);
-             		msg('warn', '获取失败');
-             	});
-             }
-            
-             function openMeue(num) {
-             	var ft = document.getElementById('File_Type_' + num).getAttribute('value');
-             	if (ft == '视频' || ft == '图片' || ft == '音乐') {
-             		if (ft == '视频') {
-             			document.getElementById("potplayer").style = 'display';
-             		} else {
-             			document.getElementById("potplayer").style = 'display: none';
-             		}
-             		document.getElementById("player").style = 'display';
-             	} else if ($('#player').css('display') != 'none') {
-             		document.getElementById("player").style = 'display: none';
-             		document.getElementById("potplayer").style = 'display: none';
-             	}
-             	document.getElementById('meueid').setAttribute('value', num);
-             	$('#meue').fadeIn(100);
-             }
-            
-             function getDlink(type) {
-                document.getElementById("loadinginfo").innerHTML = '获取下载地址中';
-             	$('#loading').fadeIn(100);
-             	var num = document.getElementById('meueid').getAttribute('value');
-             	var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
-             	var fname = document.getElementById('File_Filename_' + num).getAttribute('value');
-             	var dlink = "https://" + window.location.host + "/?f=" + fid + '&s=.baidu.com';
-             	if (type == 'download') {
-             		window.open(dlink);
-             		msg('error', '获取下载地址成功');
-             	} else if (type == 'aria2c' || type == 'mo') {
-             		if (type == 'mo') {
-             			var port = 16800;
-             			Aria2DownLoad(fname, dlink, 'netdisk', 32, port);
-             		} else {
-             			var port = 6800;
-             			Aria2DownLoad(fname, dlink, 'netdisk', 16, port);
-             		}
-             	} else if (type == 'pot') {
-             		window.open('potplayer://' + dlink);
-             		msg('error', '获取下载地址成功');
-             	} else {
-             		var aux = document.createElement("input");
-             		aux.setAttribute("value", dlink);
-             		document.body.appendChild(aux);
-             		aux.select();
-             		document.execCommand("copy");
-             		document.body.removeChild(aux);
-             		msg('error', '已复制到粘贴板');
-             	}
-             	$('#loading').fadeOut(100);
-             }
-            
-             function player() {
-             	var num = document.getElementById('meueid').getAttribute('value');
-                var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
-                var ft = document.getElementById('File_Type_' + num).getAttribute('value');
-             	var url = "https://" + window.location.host + "/?f=" + fid;
-             	msg('error', '预览准备中...');
-             	if (ft == '图片') {
-             		document.getElementById('playerinfo').innerHTML = '<span id="galleryImg" alt="预览文件" role="img" class="weui-gallery__img" style="background-image: url(' + url + ');" tabindex="-1"></span>';
-     				$('#meue').fadeOut(100);
-     				$('#gallery').fadeIn(100)
-             	} else if (ft == '视频') {
-     				dplayer(url);
-     				$('#meue').fadeOut(100);
-     				$('#gallery').fadeIn(100)
-             	} else if (ft == '音乐') {
-     				dplayer(url);
-     				$('#meue').fadeOut(100);
-     				$('#gallery').fadeIn(100)
-             	} else {
-     				msg('error', '不支持的预览格式');
-             	}
-             }
-            
-             function dplayer(url) {
-             	var type = 'normal';
-             	const dp = new DPlayer({
-             		container: document.getElementById('playerinfo'),
-             		autoplay: true,
-             		video: {
-             			url: url,
-             			type: type,
-             			hotkey: true, // 移动端全屏时向右划动快进，向左划动快退。
-             		}
-             	});
-             }
-            
-             function closeplayer() {
-             	$('#gallery').fadeOut(100);
-             	document.getElementById('playerinfo').innerText = 'null';
-             }
-            
-            $(function() {
-                $('#iosMask').on('click', function() {
-                $('#meue').fadeOut(100)
-                });
-            });
-        </script>
         <div role="alert" class="weui-toptips weui-toptips_warn" id="error">errorinfo</div>
         <div role="alert" id="loading" style="display: none;">
             <div class="weui-mask_transparent"></div>
@@ -574,19 +595,23 @@ if($nulldir==1){ ?>
                 <div id="dlink" tabindex="0" role="button" class="weui-actionsheet__cell">
                 <a href="javascript:getDlink();" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">获取下载地址</a>
                 </div>
+              <?php if(ACLINK!="" or !empty(ACLINK)){ print('
                 <div id="download" tabindex="0" role="button" class="weui-actionsheet__cell">
-                <a href="javascript:getDlink('download');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">直接下载</a>
-                </div>
+                <a href="javascript:getDlink(\'download\');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">直接下载</a>
+                </div>');
+                }?>
                 <div id="aria2cdown" tabindex="0" role="button" class="weui-actionsheet__cell">
                 <a href="javascript:getDlink('aria2c');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">发送到aria2c</a>
                 </div>
                 <div id="moritxdown" tabindex="0" role="button" class="weui-actionsheet__cell">
                 <a href="javascript:getDlink('mo');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">发送到Moritx</a>
                 </div>
+                <?php if(ACLINK!="" or !empty(ACLINK)){ print('
                 <div id="player" tabindex="0" role="button" class="weui-actionsheet__cell" style="display: none;">
                 <a href="javascript:player();" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">预览文件</a>
-                <a id="potplayer" style="display: none;" href="javascript:getDlink('pot');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">在PotPlayer中播放</a>
-                </div>
+                <a id="potplayer" style="display: none;" href="javascript:getDlink(\'pot\');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea">在PotPlayer中播放</a>
+                </div>');
+                }?>
             <div class="weui-actionsheet__action">
                 <div role="button" tabindex="0" class="weui-actionsheet__cell" id="iosActionsheetCancel" wah-hotarea="click">
                 <a href="javascript:$('#meue').fadeOut(100);" role="button" class="weui-btn weui-btn_primary">取消</a>
@@ -609,7 +634,7 @@ if($nulldir==1){ ?>
     <br>
     <div class="weui-footer">
             <p class="weui-footer__text"><?php print(FOOT); ?></p>
-            <p class="weui-footer__text">Copyright © 2019-2024 MoGuQAQ Powered By KinhWeb 1.0</p>
+            <p class="weui-footer__text">Copyright © 2019-2024 MoGuQAQ Powered By KinhWeb <?php print(VERSION); ?></p>
         </div>
 
             
