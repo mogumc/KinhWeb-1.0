@@ -160,4 +160,4 @@ function makesign($md5,$fid,$uk){
 	$sign = md5($md5."_".$uk."_".$fid."_".$timestamp);
 	return $sign;
 }
-define("VERSION","1.1");
+define("VERSION","1.3");

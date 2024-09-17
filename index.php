@@ -1,238 +1,6 @@
 <?php
-define("ONINDEX",1);
-require_once "conf.php";
-$nulldir = 1;
-$fid = $_GET['f'];
-if(!empty($fid)){
-    header("Content-Type: text/json;charset=utf-8");
-    $ua = $_SERVER['HTTP_USER_AGENT'];
-    if(ACLINK==""){
-        $url = 'http://pan.baidu.com/api/gettemplatevariable?clienttype=web&app_id=250528&web=1&fields=[%22sign1%22,%22sign2%22,%22sign3%22,%22timestamp%22,%22uk%22,%22is_vip%22,%22is_svip%22]';
-        $data = get($url,array("User-Agent: netdisk","Cookie: BDUSS=".BDUSS));
-        $j = json_decode($data);
-        $sign1 = $j->result->sign1;
-        $sign3 = $j->result->sign3;
-        $uk = $j->result->uk;
-        $vip = "0";
-        if($j->result->is_vip){
-            $vip = "1";
-        } elseif($j->result->is_svip){
-            $vip = "2";
-        }
-        $sign = rc4($sign3,$sign1);
-        if($sign == "" or $sign == null){
-            die(json_encode(array("errno" => '-8', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-        }
-        $timestamp = $j->result->timestamp;
-        $url = 'http://pan.baidu.com/api/download?clienttype=8&app_id=250528&web=1&fidlist=['.$fid.']&type=dlink&sign='.urlencode($sign).'&timestamp='.$timestamp;
-        $data = get($url,array("User-Agent: ".$ua,"Cookie: BDUSS=".BDUSS));
-        $j = json_decode($data);
-        if (!$j or !$j->dlink[0]->dlink) {
-    	    die(json_encode(array("errno" => '-8', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-        }
-        $dl2 = $j->dlink[0]->dlink;
-        $d = parse_url($dl2);
-        $parm = geturl($d["query"]);
-        $url = "http://pan.baidu.com/api/report/user?action=sapi_auth&timestamp=".$time."&clienttype=8&app_id=250528&web=1";
-        $data = get($url,array("User-Agent: netdisk","Cookie: BDUSS=".$bduss));
-        $j = json_decode($data);
-        $sk = $j->uinfo;
-        $fid = GetSubStr($parm["fid"]."{}","-","{}");
-        $md5 = str_ireplace("/file/","",$d["path"]);
-        $url = 'http://pcs.baidu.com/rest/2.0/pcs/file?method=locatedownload';
-        $pdata = 'tls=1&app_id=250528&es=1&esl=1&ver=4.0&dtype=3&err_ver=1.0&ehps=0&open_pflag=0&clienttype=8&channel=weixin&version=7.42.0.5&vip='.$vip.'&wp_retry_num=2&tdt=1&gsl=0&gtchannel=0&gtrate=0&gsl=0&gtchannel=0&gtrate=0&'.makerand($sk,$uk,$time).'&path='.$md5.'&'.$d["query"];
-        if($vip=="2"){
-            $pdata = 'tls=1&app_id=250528&es=1&esl=1&ver=4.0&dtype=3&err_ver=1.0&ehps=0&orgin=dlna&open_pflag=0&clienttype=8&channel=0&version=7.42.0.5&vip='.$vip.'&wp_retry_num=2&tdt=1&gsl=0&gtchannel=0&gtrate=0&gsl=0&gtchannel=0&gtrate=0&'.makerand($sk,$uk,$time).'&path='.$md5.'&'.$d["query"];
-        
-        }
-        $data = post($url,$pdata,array("User-Agent: ".$ua,"Cookie: BDUSS=".BDUSS));
-        $j = json_decode($data);
-        if (!$j or !$j->urls[0]->url) {
-    	    die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-        }
-        $dlink = $j->urls[0]->url;
-    } else {
-        $url = ACLINK;
-        if($url != "" && $url != null){
-            $data = get($url,array(""));
-            $j = json_decode($data);
-            $code = $j->code;
-            if($j->code == "0"){
-                $pdata = "bduss=".BDUSS."&fid=".$fid."&ua=".base64_encode($ua);
-                $data = post($url,$pdata,array("User-Agent: KinhWeb/".VERSION));
-                $j = json_decode($data);
-                if (!$j or !$j->dlink) {
-                    die(json_encode(array("errno" => '-116', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-                }
-                $dlink = $j->dlink;
-            }
-        }    
-    }
-    if(!$dlink){
-        die(json_encode(array("errno" => '-8', "msg" => "获取下载地址失败"), JSON_UNESCAPED_UNICODE));
-    }
-    echo(json_encode(array("errno" => -302, "msg" => "302 moved temporarily"), JSON_UNESCAPED_UNICODE));
-    header('HTTP/1.1 302 moved temporarily');
-    header("Location:".$dlink);
-    die();
-}
-$path = $_POST['path'];
-if(!empty($path)){
-$path = urldecode($path);
-$url = 'http://110.242.69.43/api/list?order=time&dir='.urlencode($path);
-$data = get($url,array('user-Agent: netdisk','Cookie: BDUSS='.BDUSS));
-if(!$data){
-?>
-<div class="weui-panel__bd">
-    <div class="weui-flex__item">
-        <div class="placeholder">百度网关错误</div>
-    </div>
-</div>
-<?php
-} 
-$d = json_decode($data);
-if(!$d){
-?>
-<div class="weui-panel__bd">
-    <div class="weui-flex__item">
-        <div class="placeholder">百度网关错误</div>
-    </div>
-</div>
-<?php
-}
-$errno = $d->errno;
-if($errno != 0){
-?>
-<div class="weui-panel__bd">
-    <div class="weui-flex__item">
-        <div class="placeholder">百度返回错误 错误号 <?php echo $errno?></div>
-    </div>
-</div>
-<?php
-}
-?>
-<div class="page__bd page__bd_spacing">
-<div class="weui-flex">
-    <div class="weui-flex__item">
-        <div class="placeholder">
-         <a href="javascript:openDir('%2F');" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea" title="全部文件">全部文件</a>
-         </div>
-    </div>
-<?php
-    if(!empty($path) and $path!='/'){
-        $dirs = explode('/',$path);
-        $dir_path = '';
-        $dir_paths = [null,];
-        $lastdir = $dirs[count($dirs)-1];
-        for($i=1;$i<count($dirs);$i++){
-            $dir_path.='/';
-            $dir_path.=$dirs[$i];
-            $dir_paths[$i] = $dir_path;
-            if(mb_strlen($dirs[$i])>5){
-            $dirname = mb_substr($dirs[$i],0,5).'...';  
-            } else {
-            $dirname = $dirs[$i];
-            }
-            echo '<div class="weui-flex__item">
-        <div class="placeholder">
-         <a href="javascript:openDir(\''.urlencode($dir_path).'\');" role="button" class="weui-btn weui-btn_mini weui-btn_default weui-wa-hotarea" title="'.$dirs[$i].'">'.$dirname.'</a>
-         </div>
-         </div>
-            ';
-        }
-    }
-?>
-</div>    
-    <div class="weui-cells" id="filelist">
-        <div class="weui-panel weui-panel_access">
-            <div class="weui-panel__hd">文件列表</div> 
-        </div> 
-    </div> 
-</div> 
-<?php
-for($i=0;$i<count($d->list);$i++){
-    $fname = $d->list[$i]->server_filename;
-    if(mb_strlen($fname)>32){
-        $ffname = mb_substr($fname,0,40).'...';
-    } else {
-        $ffname = $fname;
-    }
-    if(!empty($fname)){
-    $isdir = $d->list[$i]->isdir;
-    $size = $d->list[$i]->size;
-    $fsid = $d->list[$i]->fs_id;
-    $ctime = $d->list[$i]->local_ctime;
-    $path_info = $d->list[$i]->path;
-    $pcs = $d->list[$i]->dlink;
-    $category = $d->list[$i]->category;
-    if($category=='1'){
-    $filetype = '视频'; 
-    } elseif($category=='2'){
-    $filetype = '音乐';    
-    } elseif($category=='3'){
-    $filetype = '图片';       
-    } elseif($category=='4'){
-    $filetype = '文档';       
-    } elseif($category=='5'){
-    $filetype = '应用';       
-    } elseif($category=='6'){
-    $filetype = '其他';       
-    } elseif($category=='7'){
-    $filetype = '种子';       
-    } else {
-    $filetype = '未知类型';       
-    }
-    $ctime = date('Y年m月d日',$ctime);
-    if($isdir==0){
-    $uio = formatSize($size);
-    } else {
-    $uio = '--'; 
-    };
-    if($isdir==0){
-    $nulldir = 0;    
-    $cm+=1;
-    echo '<div class="weui-panel__bd">
-        <a aria-labelledby="js_p1m1_bd" href="javascript:openMeue(\''.$cm.'\');" class="weui-media-box weui-media-box_appmsg" title="'.$fname.'">
-        <div role="option" class="weui-media-box_text">
-                            <strong class="weui-media-box__title">'.$ffname.'</strong>
-                            <p class="weui-media-box__desc">'.$filetype.'  文件大小:'.$uio.' 创建时间: '.$ctime.' 点击打开菜单</p>
-        </div></a>
-        <div id= "Info_'.$cm.'" hidden>
-        <div id="File_Type_'.$cm.'" value="'.$filetype.'"></div>
-        <div id="File_Fsid_'.$cm.'" value="'.$fsid.'"></div>
-        <div id="File_Size_'.$cm.'" value="'.$size.'"></div>
-        <div id="File_Path_'.$cm.'" value="'.$path_info.'"></div>
-        <div id="File_Filename_'.$cm.'" value="'.$fname.'"></div>
-        </div>
-    </div>';
-    }
-    if($isdir==1){
-    $cm+=1;
-    $nulldir = 0; 
-    echo '<div class="weui-panel__bd">
-        <a aria-labelledby="js_p1m1_bd" href="javascript:openDir(\''.urlencode($path_info).'\');" class="weui-media-box weui-media-box_appmsg" title="'.$fname.'">
-        <div role="option" class="weui-media-box_text">
-                            <strong class="weui-media-box__title">'.$ffname.'</strong>
-                            <p class="weui-media-box__desc">文件夹 文件大小:'.$uio.' 创建时间: '.$ctime.' 点击打开文件夹</p>
-                        </div></a>
-        <div id= "Info_'.$cm.'" hidden>
-        <div id="File_Type_'.$cm.'" value="'.$filetype.'"></div>
-        <div id="File_Path_'.$cm.'" value="'.$path_info.'"></div>
-        <div id="File_Filename_'.$cm.'" value="'.$fname.'"></div>
-        </div>
-    </div>';
-    }
-    }
-}
-if($nulldir==1){ ?>
-<div class="weui-panel__bd">
-    <div class="weui-flex__item">
-        <div class="placeholder">什么也没有呢...检查下文件夹是否正确吧~</div>
-    </div>
-</div>
-<?php 
-}
-} else {
+    define("ONINDEX",1);
+    require_once "conf.php";
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN" class="">
@@ -244,11 +12,11 @@ if($nulldir==1){ ?>
         <meta name="referrer" content="never" />
         <meta name="viewport" content="width=device-width,initial-scale=1.0" />
         <meta http-equiv="Cache-Control" content="no-siteapp" />
-        <link rel="stylesheet" href="//cdn.bootcdn.net/ajax/libs/weui/2.5.9/style/weui.min.css">
-        <script src="//cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <link rel="stylesheet" href="//lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/weui/2.5.4/style/weui.min.css">
+        <script src="//lf6-cdn-tos.bytecdntp.com/cdn/expire-1-M/jquery/3.6.0/jquery.min.js"></script>
         <script src="//lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/dplayer/1.26.0/DPlayer.min.js"></script>
         <script>
-                     function Aria2DownLoad(Name, DLink, UA, Split, port) {
+                function Aria2DownLoad(Name, DLink, UA, Split, port) {
              	var Variable_WebSocket = new WebSocket('ws://localhost:' + port + '/jsonrpc');
              	Variable_WebSocket.onopen = function() {
              		Variable_WebSocket.send('{"jsonrpc":2,"id":"KinhWeb","method":"system.multicall","params":[[{"methodName":"aria2.addUri","params":[["' + DLink + '"],{"max-connection-per-server":"' + Split + '","split":"' + Split + '","out":"' + Name + '","user-agent":"' + UA + '","piece-length":"1M","allow-piece-length-change":"true"}]}]]}');
@@ -301,7 +69,7 @@ if($nulldir==1){ ?>
              	var data = {
              		'path': path
              	}
-             	$.post(window.location.protocol + "//" + window.location.host + window.location.pathname, data, function(r) {
+             	$.post(window.location.protocol + "//" + window.location.host + window.location.pathname + "api?t=list", data, function(r) {
              		document.getElementById("loading").style = 'display: none';
              		document.getElementById('all').innerHTML = r;
              	}).fail(function() {
@@ -336,7 +104,7 @@ if($nulldir==1){ ?>
              	var num = document.getElementById('meueid').getAttribute('value');
              	var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
              	var fname = document.getElementById('File_Filename_' + num).getAttribute('value');
-             	var dlink = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=" + fid + '&s=.baidu.com';
+             	var dlink = window.location.protocol + "//" + window.location.host + window.location.pathname + "api?f=" + fid + '&t=.baidu.com';
              	if (type == 'download') {
              		window.open(dlink);
              		msg('error', '获取下载地址成功');
@@ -367,7 +135,7 @@ if($nulldir==1){ ?>
              	var num = document.getElementById('meueid').getAttribute('value');
                 var fid = document.getElementById('File_Fsid_' + num).getAttribute('value');
                 var ft = document.getElementById('File_Type_' + num).getAttribute('value');
-             	var url = window.location.protocol + "//" + window.location.host + window.location.pathname + "?f=" + fid;
+             	var url = window.location.protocol + "//" + window.location.host + window.location.pathname + "/api?f=" + fid + '&t=.baidu.com';
              	msg('error', '预览准备中...');
              	if (ft == '图片') {
              		document.getElementById('playerinfo').innerHTML = '<span id="galleryImg" alt="预览文件" role="img" class="weui-gallery__img" style="background-image: url(' + url + ');" tabindex="-1"></span>';
@@ -635,10 +403,6 @@ if($nulldir==1){ ?>
     <div class="weui-footer">
             <p class="weui-footer__text"><?php print(FOOT); ?></p>
             <p class="weui-footer__text">Copyright © 2019-2024 MoGuQAQ Powered By KinhWeb <?php print(VERSION); ?></p>
-        </div>
-
-            
+        </div>      
     </body>
-    
 </html>
-<?php } ?>
