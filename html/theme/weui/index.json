@@ -1,0 +1,11 @@
+{
+    "theme":{
+        "name":"weui",
+        "version":"1.0",
+        "update_time":"2024-10-30"
+    },
+    "file":{
+        "main":["main.html","head.html"]
+    },
+    "require":[]
+}
