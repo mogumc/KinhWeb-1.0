@@ -1,9 +1,9 @@
-# KinhWeb-1.0
-A BaiduYun safety share web.
+# KinhWeb-Go
+A BaiduYun safety share web.Golang Version.
 
 ## Usage  
-*PHP* Version 7.4+  
-Add bduss in conf.php.  
+Linux or Windows.
+Add bduss in conf.ini.
 Add accelerate link to get download and preview function by browser.
 
 ## FaQ
