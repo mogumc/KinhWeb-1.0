@@ -14,6 +14,7 @@ type config struct {
 	System system `yaml:"system"`
 	Theme  theme  `yaml:"theme"`
 	Logger logger `yaml:"logger"`
+	User   user   `yaml:"user"`
 }
 
 type system struct {
@@ -34,6 +35,12 @@ type logger struct {
 	Prefix       string `yaml:"prefix"`
 	Showline     bool   `yaml:"show_line"`
 	LogInConsole bool   `yaml:"log_in_console"`
+}
+
+type user struct {
+	Bduss   string `yaml:"bduss"`
+	Is_VIP  int    `yaml:"is_vip"`
+	AccLink string `yaml:"acclink"`
 }
 
 var Config *config

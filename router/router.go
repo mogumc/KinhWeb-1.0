@@ -25,6 +25,7 @@ func InitRouter() *gin.Engine {
 
 func register(router *gin.Engine) {
 	//下载文件路由
-	router.GET("/api/success", api.Success)
-	router.GET("/api/failed", api.Failed)
+	router.GET("/api/down", api.Down)
+	//文件列表路由
+	router.GET("/api/list", api.List)
 }

@@ -21,8 +21,8 @@ func Success(c *gin.Context, data interface{}) {
 		data = gin.H{}
 	}
 	res := Result{}
-	res.Code = int(ApiCode.Sucess)
-	res.Message = ApiCode.GetMessage(ApiCode.Sucess)
+	res.Code = int(ApiCode.Success)
+	res.Message = ApiCode.GetMessage(ApiCode.Success)
 	res.Data = data
 	c.JSON(http.StatusOK, res)
 }

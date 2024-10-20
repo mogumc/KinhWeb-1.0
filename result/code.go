@@ -6,22 +6,21 @@ package result
 
 type Codes struct {
 	Message map[uint]string
-	Sucess  uint
+	Success uint
 	Failed  uint
 }
 
 var ApiCode = &Codes{
-	Sucess: 200,
-	Failed: 501,
+	Success: 200,
+	Failed:  501,
 }
 
-func Init() {
+func init() {
 	ApiCode.Message = map[uint]string{
-		ApiCode.Sucess: "请求成功",
-		ApiCode.Failed: "网关错误",
+		ApiCode.Success: "请求成功",
+		ApiCode.Failed:  "网关错误",
 	}
 }
-
 func (c *Codes) GetMessage(code uint) string {
 	message, ok := c.Message[code]
 	if !ok {
