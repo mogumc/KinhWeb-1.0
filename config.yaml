@@ -1,0 +1,20 @@
+# 系统配置
+system:
+  bind_port: 8080
+  bind_host: "0.0.0.0"
+  theme: "weui"
+  title: "KinhWeb"
+  foot: ""
+  debug: false
+
+# 主题设置
+theme:
+  color: "defualt"
+
+# 日志设置
+logger:
+  level: info
+  #info warn error
+  prefix: '[KinhWeb]'
+  show_line: true
+  log_in_console: true
