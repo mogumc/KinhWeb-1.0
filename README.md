@@ -17,5 +17,5 @@ If you have any question please put issues.
 GPL-2.0 license
 
 ## Warning
-Now version is still developing.  
+This version is still developing.  
 If you want use this program,please use php version.  
