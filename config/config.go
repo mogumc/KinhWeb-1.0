@@ -6,6 +6,7 @@ package config
 
 import (
 	"io/ioutil"
+	"kinhweb/global"
 
 	"gopkg.in/yaml.v3"
 )
@@ -18,12 +19,13 @@ type config struct {
 }
 
 type system struct {
-	Bind_port int    `yaml:"bind_port"`
-	Bind_host string `yaml:"bind_host"`
-	Sys_theme string `yaml:"theme"`
-	Sys_title string `yaml:"title"`
-	Sys_foot  string `yaml:"foot"`
-	Debug     bool   `yaml:"debug"`
+	Bind_port   int    `yaml:"bind_port"`
+	Bind_host   string `yaml:"bind_host"`
+	Sys_version string `yaml:"version"`
+	Sys_theme   string `yaml:"theme"`
+	Sys_title   string `yaml:"title"`
+	Sys_foot    string `yaml:"foot"`
+	Debug       bool   `yaml:"debug"`
 }
 
 type theme struct {
@@ -48,7 +50,18 @@ var Config *config
 func init() {
 	yamlFile, err := ioutil.ReadFile("./config.yaml")
 	if err != nil {
-		return
+		global.Log.Errorf("解析文件失败: %v", err)
 	}
 	yaml.Unmarshal(yamlFile, &Config)
+}
+
+func UpdateYaml(config *config) {
+	yamlData, err := yaml.Marshal(&config)
+	if err != nil {
+		global.Log.Fatalf("发生错误!更新配置失败!")
+	}
+	err = ioutil.WriteFile("./config.yaml", yamlData, 0644)
+	if err != nil {
+		global.Log.Errorf("写入文件失败: %v", err)
+	}
 }

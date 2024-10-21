@@ -22,8 +22,8 @@ func Down(c *gin.Context) {
 	if global.Log == nil {
 		global.Log = core.InitLogger()
 	}
-
 	fid := c.Query("fid")
+	mode := c.Query("m")
 	if fid == "" {
 		result.Failed(c, -1, "Param Error")
 		return
@@ -75,6 +75,10 @@ func Down(c *gin.Context) {
 					result.Failed(c, int(errno), "获取下载地址失败")
 					return
 				}
+				if mode == ".baidu.com" {
+					c.Redirect(302, dlink[0])
+					return
+				}
 				data = gin.H{"fid": intfid, "dlink": dlink[0]}
 				result.Success(c, data)
 			}
@@ -104,7 +108,7 @@ func Down(c *gin.Context) {
 				if json.Unmarshal([]byte(res), &JsonData) == nil {
 					errno := JsonData["errno"].(float64)
 					if err != nil {
-						global.Log.Warnf("加速链接返回了无效数据")
+						global.Log.Warnf("请求的加速链接返回了无效数据")
 						result.Failed(c, -1, "无效的加速链接")
 						return
 					}
@@ -114,9 +118,14 @@ func Down(c *gin.Context) {
 						return
 					}
 					dlink := JsonData["dlink"].(string)
-					global.Log.Infof("获取到地址 %s", dlink)
 					if dlink == "" {
+						global.Log.Errorf("获取下载地址失败")
 						result.Failed(c, int(errno), "获取下载地址失败")
+						return
+					}
+					global.Log.Infof("获取到地址 %s", dlink)
+					if mode == ".baidu.com" {
+						c.Redirect(302, dlink)
 						return
 					}
 					data = gin.H{"fid": intfid, "dlink": dlink}
