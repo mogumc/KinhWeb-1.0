@@ -2,6 +2,7 @@
 system:
   bind_port: 8080
   bind_host: "0.0.0.0"
+  version: "1.0.0"
   theme: "weui"
   title: "KinhWeb"
   foot: ""
