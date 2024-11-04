@@ -1,4 +1,4 @@
-# 系统配置
+# 系统设置
 system:
   bind_port: 8080
   bind_host: "0.0.0.0"
@@ -19,3 +19,9 @@ logger:
   prefix: '[KinhWeb]'
   show_line: true
   log_in_console: true
+
+# 账户设置
+user:
+    bduss: ""
+    is_vip: 0
+    acclink: ""
