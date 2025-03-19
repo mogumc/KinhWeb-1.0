@@ -25,3 +25,4 @@ user:
     bduss: ""
     is_vip: 0
     acclink: ""
+    api_path: http://110.242.69.43
