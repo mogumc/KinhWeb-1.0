@@ -1,5 +1,16 @@
-# KinhWeb-Go
-百度网盘在线仓库,使用Go编写.
+<div align="center">
+    <img src="./logo.png" width="200">
+    <h1></h1>
+</div>
+
+
+<div align="center">
+  <a href="https://github.com/mogumc/KinhWeb/releases"><img alt="Release" src="https://img.shields.io/github/v/release/mogumc/KinhWeb?logo=visualstudio&style=flat-square&color=1E9BFA"></a>
+    <img src="https://komarev.com/ghpvc/?username=mogumc&label=Views&color=orange&style=flat" alt="访问量统计" />
+  <h3>Go+Gin 高性能百度网盘仓库</h3>
+</div>
+
+<br/>
 
 ## 安装使用  
 目前支持Linux与Windows部署,其他平台请自行编译运行.  
