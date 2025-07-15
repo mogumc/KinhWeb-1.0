@@ -1,6 +1,6 @@
 // 更新验证文件
 // @author MoGuQAQ
-// @version 1.0.0
+// @version 1.0.1
 
 package core
 
@@ -19,7 +19,7 @@ func Verify() {
 		global.Log = InitLogger()
 	}
 	version := config.Config.System.Sys_version
-	this_file_version := "1.0.0"
+	this_file_version := "1.0.1"
 	if version != this_file_version {
 		global.Log.Warnf("检测到版本不一致")
 		config.Config.System.Sys_version = this_file_version
