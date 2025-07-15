@@ -120,8 +120,8 @@ func Down(c *gin.Context) {
 				res = utils.Post(acclink, "KinhWeb", "", pdata)
 				var JsonData map[string]interface{}
 				if json.Unmarshal([]byte(res), &JsonData) == nil {
-					errno := JsonData["errno"].(float64)
-					if err != nil {
+					errno, ok := JsonData["errno"].(float64)
+					if !ok {
 						global.Log.Warnf("请求的加速链接返回了无效数据")
 						result.Failed(c, -1, "无效的加速链接")
 						return
