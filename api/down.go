@@ -30,6 +30,12 @@ func Down(c *gin.Context) {
 	}
 
 	acclink := config.Config.User.AccLink
+	apipath := config.Config.User.ApiPath
+	if apipath == "" {
+		config.Config.User.ApiPath = "https://pan.baidu.com"
+		config.UpdateYaml(config.Config)
+		apipath = config.Config.User.ApiPath
+	}
 	BDUSS := config.Config.User.Bduss
 	if BDUSS == "" {
 		global.Log.Warnf("未填写BDUSS!")
@@ -46,9 +52,8 @@ func Down(c *gin.Context) {
 	var data interface{}
 	if acclink == "" {
 		global.Log.Infof("当前处于本地解析模式")
-		url := "http://110.242.69.43/api/filemetas?dlink=1&clienttype=17&rt=third&vip=2&fsids=[%22" + fid + "%22]"
+		url := apipath + "/api/filemetas?dlink=1&clienttype=17&rt=third&vip=2&fsids=[%22" + fid + "%22]"
 		res := utils.Get(url, "netdisk;Mo", "BDUSS="+BDUSS+";PANPSC=;BAIDUID=1;ndut_fmt="+utils.Getndut())
-
 		var JsonData map[string]interface{}
 		if json.Unmarshal([]byte(res), &JsonData) == nil {
 			errno := JsonData["errno"].(float64)
@@ -68,10 +73,19 @@ func Down(c *gin.Context) {
 					result.Failed(c, int(errno), "获取下载地址失败")
 					return
 				}
-				dl := strings.Replace(odlink, "d.pcs.baidu.com", "218.93.204.36/b/pcs.baidu.com", -1) + "&clienttype=17&channel=0&version=7.22.0.8&" + utils.Getrand(BDUSS)
+				dl := strings.Replace(strings.Replace(odlink, "d.pcs.baidu.com", "218.93.204.36/b/d.pcs.baidu.com", -1), "https", "http", -1) + "&clienttype=17&channel=0&version=7.22.0.8&" + utils.Getrand(BDUSS)
 				headResult := utils.Head(dl, c.Request.Header.Get("User-Agent"), "")
-				dlink := headResult["Location"]
-				if dlink[0] == "" {
+				dlink, ok := headResult["Location"]
+				if !ok {
+					dl = odlink + "&clienttype=17&channel=0&version=7.22.0.8&" + utils.Getrand(BDUSS)
+					headResult := utils.Head(dl, c.Request.Header.Get("User-Agent"), "")
+					dlink, ok = headResult["Location"]
+					if !ok {
+						result.Failed(c, 99, "获取下载地址失败")
+						return
+					}
+				}
+				if len(dlink) < 1 || dlink[0] == "" {
 					result.Failed(c, int(errno), "获取下载地址失败")
 					return
 				}
