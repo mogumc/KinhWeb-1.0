@@ -1,0 +1,11 @@
+services:
+  kinhweb:
+    image: kinhweb:latest
+    container_name: kinhweb
+    ports:
+      - "8080:8080" 
+    volumes:
+      - /opt/kinhweb/config.yaml:/config.yaml
+      - /opt/kinhweb/templates:/templates
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
