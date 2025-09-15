@@ -14,6 +14,7 @@
 
 ## 安装使用  
 目前支持Linux与Windows部署,其他平台请自行编译运行.  
+你可以复制本项目下的``_config.yaml``文件重命名为``config.yaml``  
 在``config.yaml``文件下填写``user``部分信息.  
 
 ```yaml
