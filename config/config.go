@@ -43,6 +43,7 @@ type user struct {
 	Bduss   string `yaml:"bduss"`
 	Is_VIP  int    `yaml:"is_vip"`
 	AccLink string `yaml:"acclink"`
+	ApiPath string `yaml:"api_path"`
 }
 
 var Config *config
